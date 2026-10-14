@@ -1,3 +1,4 @@
+
 """Streamlit interface for the Mango Ripeness Detector."""
 
 from __future__ import annotations
@@ -87,7 +88,9 @@ def build_mango_model() -> Any:
 def load_resources() -> tuple[Any, Any]:
     """Load the saved weights and scaler once per Streamlit process."""
     missing_assets = [
-        str(path.name) for path in (MODEL_PATH, SCALER_PATH) if not path.is_file()
+        str(path.name)
+        for path in (MODEL_PATH, SCALER_PATH)
+        if not path.is_file()
     ]
     if missing_assets:
         raise FileNotFoundError(
@@ -112,11 +115,14 @@ def load_resources() -> tuple[Any, Any]:
         )
 
     LOGGER.info(
-        "Model resources loaded: architecture=%.3fs weights=%.3fs scaler=%.3fs total=%.3fs",
+        "Model resources loaded: architecture=%.3fs weights=%.3fs "
+        "scaler=%.3fs total=%.3fs",
         architecture_seconds,
         weights_seconds,
         scaler_seconds,
-        time.perf_counter() - started + architecture_seconds + weights_seconds,
+        time.perf_counter() - started
+        + architecture_seconds
+        + weights_seconds,
     )
     return model, scaler
 
@@ -125,6 +131,7 @@ def load_resources() -> tuple[Any, Any]:
 def prepare_uploaded_image(image_bytes: bytes) -> tuple[np.ndarray, np.ndarray]:
     """Decode once and return an RGB preview plus the original model input."""
     started = time.perf_counter()
+
     with Image.open(io.BytesIO(image_bytes)) as source:
         source.load()
         rgb_image = source.convert("RGB")
@@ -151,6 +158,7 @@ def predict_image(model: Any, scaler: Any, image_batch: np.ndarray) -> float:
         feature_started = time.perf_counter()
         base_features = np.zeros((1, FEATURE_COUNT), dtype=np.float32)
         scaled_features = scaler.transform(base_features)
+
         LOGGER.info(
             "Feature scaling completed in %.3fs",
             time.perf_counter() - feature_started,
@@ -165,9 +173,12 @@ def predict_image(model: Any, scaler: Any, image_batch: np.ndarray) -> float:
         prediction_started = time.perf_counter()
         output = model.predict(inputs, verbose=0)
         prediction_output = np.asarray(output)
+
         if prediction_output.shape != (1, 1):
             raise ValueError("The model returned an unexpected output shape.")
+
         prediction = float(prediction_output[0, 0])
+
         if not np.isfinite(prediction) or not 0.0 <= prediction <= 1.0:
             raise ValueError("The model returned an invalid classification score.")
 
@@ -176,6 +187,7 @@ def predict_image(model: Any, scaler: Any, image_batch: np.ndarray) -> float:
             time.perf_counter() - prediction_started,
         )
         return prediction
+
     finally:
         PREDICTION_LOCK.release()
 
@@ -184,6 +196,7 @@ def interpret_prediction(prediction: float) -> tuple[str, float, str]:
     """Preserve the original class threshold and class-aligned score."""
     if prediction > DECISION_THRESHOLD:
         return "Artificially Ripened Mango", prediction, "artificial"
+
     return "Naturally Ripened Mango", 1.0 - prediction, "natural"
 
 
@@ -223,7 +236,9 @@ def render_styles(theme: str) -> None:
             "warning_line": "#5a4a2b",
         },
     }
+
     colors = palettes[theme]
+
     st.markdown(
         f"""
 <style>
@@ -244,7 +259,8 @@ def render_styles(theme: str) -> None:
     --warning-line: {colors["warning_line"]};
 }}
 html, body, [class*="css"] {{
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }}
 .stApp {{ background: var(--page); color: var(--ink); }}
 [data-testid="stHeader"] {{ background: var(--page); }}
@@ -269,7 +285,8 @@ div[data-testid="stMarkdownContainer"] p {{ color: var(--muted); line-height: 1.
     font-size:.88rem;
     font-weight:620;
     box-shadow:0 1px 2px rgba(16,35,22,.08);
-    transition:background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease;
+    transition:background-color .2s ease, border-color .2s ease,
+    color .2s ease, box-shadow .2s ease, transform .2s ease;
 }}
 [data-testid="stButton"] button p,
 [data-testid="stButton"] button span {{ color:inherit !important; }}
@@ -280,14 +297,16 @@ div[data-testid="stMarkdownContainer"] p {{ color: var(--muted); line-height: 1.
     box-shadow:0 3px 8px rgba(16,35,22,.12);
     transform:translateY(-1px);
 }}
-[data-testid="stButton"] button[kind="primary"], [data-testid="stButton"] button[data-testid="stBaseButton-primary"] {{
+[data-testid="stButton"] button[kind="primary"],
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"] {{
     border-color:var(--button-green) !important;
     background:var(--button-green) !important;
     color:#fff !important;
     font-weight:700;
     box-shadow:0 2px 5px rgba(16,35,22,.18);
 }}
-[data-testid="stButton"] button[kind="primary"]:hover, [data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover {{
+[data-testid="stButton"] button[kind="primary"]:hover,
+[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover {{
     border-color:var(--button-hover) !important;
     background:var(--button-hover) !important;
     color:#fff !important;
@@ -376,6 +395,7 @@ button:focus-visible, a:focus-visible, [role="switch"]:focus-visible {{
 def render_header(page: str, dark_theme: bool) -> None:
     """Render navigation and theme controls shared by both pages."""
     active_nav = "nav_home" if page == "home" else "nav_detection"
+
     st.markdown(
         f"""
 <style>
@@ -394,18 +414,23 @@ def render_header(page: str, dark_theme: bool) -> None:
 """,
         unsafe_allow_html=True,
     )
+
     brand_column, home_column, detect_column, theme_column = st.columns(
         [4.1, 1, 1.35, 1.55],
         vertical_alignment="center",
     )
+
     with brand_column:
         route_label = "Home" if page == "home" else "Detection"
+
         st.markdown(
             f"""
 <div class="app-header">
   <span class="brand-mark" aria-hidden="true">MR</span>
-  <div><div class="wordmark">Mango Ripeness Study</div>
-  <div class="route-label" aria-current="page">{route_label}</div></div>
+  <div>
+    <div class="wordmark">Mango Ripeness Study</div>
+    <div class="route-label" aria-current="page">{route_label}</div>
+  </div>
 </div>
 """,
             unsafe_allow_html=True,
@@ -448,13 +473,14 @@ def render_home() -> None:
 <section class="hero">
   <div class="eyebrow">Agricultural computer vision · Academic project</div>
   <h1 class="hero-title">A closer look at<br><span>mango ripening.</span></h1>
-  <p class="hero-copy">Explore an image-based classification demonstration built around the project's existing trained model. Upload a mango image to view the model's classification and score.</p>
+  <p class="hero-copy">Explore an image-based classification demonstration built around the project's existing trained model. Upload or capture a mango image to view the model's classification and score.</p>
 </section>
 """,
         unsafe_allow_html=True,
     )
 
     action_column, aside_column = st.columns([1.25, 0.75], gap="large")
+
     with action_column:
         if st.button(
             "Start Detection",
@@ -464,8 +490,10 @@ def render_home() -> None:
         ):
             st.session_state.page = "detection"
             st.rerun()
+
         st.markdown(
-            '<a class="secondary-link" href="#how-it-works">How it works <span aria-hidden="true">↓</span></a>',
+            '<a class="secondary-link" href="#how-it-works">'
+            'How it works <span aria-hidden="true">↓</span></a>',
             unsafe_allow_html=True,
         )
 
@@ -481,6 +509,7 @@ def render_home() -> None:
         )
 
     st.markdown('<div id="how-it-works"></div>', unsafe_allow_html=True)
+
     st.markdown(
         """
 <section class="content-section">
@@ -491,13 +520,29 @@ def render_home() -> None:
 """,
         unsafe_allow_html=True,
     )
+
     st.write("")
+
     first, second, third = st.columns(3, gap="medium")
+
     steps = (
-        ("01", "Upload an image", "Choose a clear mango photo in JPG, JPEG, or PNG format."),
-        ("02", "Model analysis", "The image is resized and passed into the saved model."),
-        ("03", "Review the result", "See the existing class label and class-aligned model score."),
+        (
+            "01",
+            "Choose an image",
+            "Upload a JPG, JPEG, or PNG image, or take a photo with your camera.",
+        ),
+        (
+            "02",
+            "Model analysis",
+            "The image is resized and passed into the saved model.",
+        ),
+        (
+            "03",
+            "Review the result",
+            "See the existing class label and class-aligned model score.",
+        ),
     )
+
     for column, (number, title, description) in zip(
         (first, second, third),
         steps,
@@ -516,6 +561,7 @@ def render_home() -> None:
             )
 
     st.write("")
+
     st.markdown(
         """
 <div class="limitation-note">
@@ -532,22 +578,51 @@ def render_detection() -> None:
 <div class="page-intro">
   <div class="eyebrow">Image classification</div>
   <h1>Detection</h1>
-  <p class="page-subtitle">Upload a clear photo of one mango, then run the existing model.</p>
+  <p class="page-subtitle">Upload a clear mango photo or capture one with your camera, then run the existing model.</p>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-    upload_column, preview_column = st.columns([1.1, 0.9], gap="large")
+    upload_column, preview_column = st.columns(
+        [1.1, 0.9],
+        gap="large",
+    )
+
     with upload_column:
-        st.markdown("**Choose an image**")
-        st.caption("Supported formats: JPG, JPEG, PNG. Use a clear, well-lit photo.")
-        uploaded_file = st.file_uploader(
-            "Mango image",
-            type=["jpg", "jpeg", "png"],
-            key="mango_image",
+        st.markdown("**Choose your mango image**")
+
+        image_source = st.radio(
+            "Image source",
+            options=["Upload image", "Take photo"],
+            horizontal=True,
+            key="image_source",
             label_visibility="collapsed",
         )
+
+        if image_source == "Upload image":
+            st.caption(
+                "Choose a clear, well-lit mango photo. "
+                "Supported formats: JPG, JPEG, PNG."
+            )
+
+            uploaded_file = st.file_uploader(
+                "Mango image",
+                type=["jpg", "jpeg", "png"],
+                key="mango_image",
+                label_visibility="collapsed",
+            )
+
+        else:
+            st.caption(
+                "Allow camera access when your browser asks. "
+                "Position one mango clearly in the frame."
+            )
+
+            uploaded_file = st.camera_input(
+                "Take a photo of your mango",
+                key="mango_camera",
+            )
 
     preview: np.ndarray | None = None
     image_batch: np.ndarray | None = None
@@ -557,38 +632,69 @@ def render_detection() -> None:
     if uploaded_file is not None:
         image_bytes = uploaded_file.getvalue()
         image_digest = hashlib.sha256(image_bytes).hexdigest()
+
         try:
             preview, image_batch = prepare_uploaded_image(image_bytes)
-        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+
+        except (
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+            Image.DecompressionBombError,
+        ):
             image_error = True
             st.error(
-                "This file could not be read as a valid image. Please choose a JPG, "
-                "JPEG, or PNG image."
+                "This file could not be read as a valid image. "
+                "Please choose or capture another JPG, JPEG, or PNG image."
             )
+
         except Exception:
-            LOGGER.exception("Unexpected error while decoding the uploaded image.")
+            LOGGER.exception(
+                "Unexpected error while decoding the selected image."
+            )
             image_error = True
-            st.error("The image could not be prepared. Please try a different image.")
+            st.error(
+                "The image could not be prepared. "
+                "Please try another image."
+            )
 
     with preview_column:
         st.markdown("**Image preview**")
+
         if preview is None:
             st.markdown(
-                '<div class="preview-empty">Your selected mango image will appear here.</div>',
+                """
+<div class="preview-empty">
+    Your uploaded or captured mango image will appear here.
+</div>
+""",
                 unsafe_allow_html=True,
             )
         else:
-            st.image(preview, caption="Selected mango image", width="stretch")
+            st.image(
+                preview,
+                caption=(
+                    "Uploaded mango image"
+                    if image_source == "Upload image"
+                    else "Captured mango image"
+                ),
+                width="stretch",
+            )
+
+    previous_result = st.session_state.get("last_prediction")
 
     if image_digest is None or (
-        st.session_state.get("last_prediction") is not None
-        and st.session_state.last_prediction["image_digest"] != image_digest
+        previous_result is not None
+        and previous_result["image_digest"] != image_digest
     ):
         st.session_state.last_prediction = None
 
-
     if image_batch is not None and not image_error:
-        prediction_running = st.session_state.get("prediction_running", False)
+        prediction_running = st.session_state.get(
+            "prediction_running",
+            False,
+        )
+
         if st.button(
             "Predict",
             key="predict",
@@ -598,38 +704,59 @@ def render_detection() -> None:
         ):
             st.session_state.prediction_running = True
             st.session_state.last_prediction = None
+
             try:
                 with st.spinner(
-                    "Preparing the trained model and analyzing the image...",
+                    "Preparing the trained model and analyzing the image..."
                 ):
                     model, scaler = load_resources()
-                    prediction = predict_image(model, scaler, image_batch)
+                    prediction = predict_image(
+                        model,
+                        scaler,
+                        image_batch,
+                    )
+
                 st.session_state.last_prediction = {
                     "image_digest": image_digest,
                     "raw_prediction": prediction,
                 }
+
             except RuntimeError as error:
                 st.error(str(error))
+
             except (FileNotFoundError, OSError, ValueError):
-                LOGGER.exception("Could not load resources or complete prediction.")
-                st.error(
-                    "The model could not complete this prediction. Check that the "
-                    "model and scaler files are present and compatible."
+                LOGGER.exception(
+                    "Could not load resources or complete prediction."
                 )
+                st.error(
+                    "The model could not complete this prediction. "
+                    "Check that the model and scaler files are present "
+                    "and compatible."
+                )
+
             except Exception:
-                LOGGER.exception("Unexpected error during model loading or prediction.")
-                st.error(
-                    "Prediction could not be completed. Please try again or check "
-                    "the application logs."
+                LOGGER.exception(
+                    "Unexpected error during model loading or prediction."
                 )
+                st.error(
+                    "Prediction could not be completed. "
+                    "Please try again or check the application logs."
+                )
+
             finally:
                 st.session_state.prediction_running = False
 
     result = st.session_state.get("last_prediction")
-    if result is not None and result["image_digest"] == image_digest:
+
+    if (
+        result is not None
+        and image_digest is not None
+        and result["image_digest"] == image_digest
+    ):
         label, class_score, category = interpret_prediction(
             result["raw_prediction"]
         )
+
         st.markdown(
             f"""
 <section class="result-card result-{category}" role="status" aria-live="polite">
@@ -637,19 +764,27 @@ def render_detection() -> None:
   <div class="result-class">{label}</div>
   <div class="result-kicker">Class-aligned model score · not a calibrated probability</div>
   <div class="score-value">{class_score:.2%}</div>
-  <div class="score-track" role="progressbar" aria-label="Class-aligned model score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{class_score * 100:.0f}">
+  <div class="score-track" role="progressbar"
+       aria-label="Class-aligned model score"
+       aria-valuemin="0" aria-valuemax="100"
+       aria-valuenow="{class_score * 100:.0f}">
     <div class="score-fill" style="width:{class_score * 100:.2f}%"></div>
   </div>
 </section>
 """,
             unsafe_allow_html=True,
         )
+
         st.markdown(
-            f'<p class="technical-note">Raw model output: {result["raw_prediction"]:.4f} · Existing decision threshold: {DECISION_THRESHOLD:.1f}</p>',
+            f'<p class="technical-note">Raw model output: '
+            f'{result["raw_prediction"]:.4f} · Existing decision '
+            f'threshold: {DECISION_THRESHOLD:.1f}</p>',
             unsafe_allow_html=True,
         )
+
         st.markdown(
-            '<p class="limitation-inline">This visual result does not verify ripening chemicals, treatment history, or food safety.</p>',
+            '<p class="limitation-inline">This visual result does not '
+            'verify ripening chemicals, treatment history, or food safety.</p>',
             unsafe_allow_html=True,
         )
 
@@ -660,6 +795,7 @@ def main() -> None:
         page_icon="🌿",
         layout="wide",
     )
+
     st.session_state.setdefault("page", "home")
     st.session_state.setdefault("dark_theme", False)
     st.session_state.setdefault("last_prediction", None)
@@ -667,6 +803,7 @@ def main() -> None:
 
     page = st.session_state.page
     dark_theme = st.session_state.dark_theme
+
     render_styles("dark" if dark_theme else "light")
     render_header(page, dark_theme)
     st.divider()
@@ -677,7 +814,9 @@ def main() -> None:
         render_detection()
 
     st.markdown(
-        '<footer class="app-footer">Mango Ripeness Study · Python · Streamlit · TensorFlow</footer>',
+        '<footer class="app-footer">'
+        'Mango Ripeness Study · Python · Streamlit · TensorFlow'
+        '</footer>',
         unsafe_allow_html=True,
     )
 
