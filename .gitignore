@@ -1,0 +1,28 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Python bytecode and test/tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local secrets and environment-specific configuration
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# User uploads and local test artifacts
+web/uploads/
+web/.validation-*.png
+web/.ui-check.png
